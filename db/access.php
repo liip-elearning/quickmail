@@ -37,12 +37,5 @@ $capabilities = array(
         'archetypes' => array(
             'manager' => CAP_ALLOW,
         )
-    ),
-    'block/quickmail:candelete' => array(
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
-            'manager' => CAP_ALLOW,
-        )
     )
 );
