@@ -1,7 +1,7 @@
 <?php
 
 // Written at Louisiana State University
-
+//
 require_once($CFG->dirroot . '/blocks/quickmail/lib.php');
 
 class block_quickmail extends block_list {
@@ -10,7 +10,18 @@ class block_quickmail extends block_list {
     }
 
     function applicable_formats() {
-        return array('site' => false, 'my' => false, 'course-view' => true);
+        global $USER;
+
+        // DWE -> temp variable to make it always evaluate to admin email
+        // @todo -> figure out how to tell if the user is an admin or not
+        
+        $admin_email = true;
+        if($admin_email){
+            return array('site' => false, 'my' => false, 'course-view' => true);
+        }
+        else{
+        return array('site' => true, 'my' => false, 'course-view' => false);
+        }
     }
     function has_config() {
         return true;
@@ -24,7 +35,7 @@ class block_quickmail extends block_list {
     }
     
     function get_content() {
-        global $CFG, $COURSE, $OUTPUT;
+        global $CFG, $COURSE, $OUTPUT, $USER;
 
         if ($this->content !== NULL) {
             return $this->content;
@@ -45,6 +56,21 @@ class block_quickmail extends block_list {
         $icon_class = array('class' => 'icon');
 
         $cparam = array('courseid' => $COURSE->id);
+        
+        if(is_siteadmin($USER->id)){
+            $send_email_str = get_string('send_email', 'block_admin_email');
+            $send_email_href = new moodle_url('/blocks/quickmail/adminemail.php');
+            $send_email = html_writer::link($send_email_href, $send_email_str);
+            $this->content->items[] = $send_email;
+
+            $this->content->icons[] =
+                $OUTPUT->pix_icon('i/email', $send_email_str,
+                    'moodle', array('class' => 'icon'));
+            return $this->content;
+
+        }
+        
+        
         
         if ($can_send) {
             $send_email_str = quickmail::_s('composenew');
