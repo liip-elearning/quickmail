@@ -66,6 +66,7 @@ $users          = empty($sql) ? array() :
     get_users_listing($sort, $direction, 0, 
     0, '', '', '', $sql, $params);
 
+
 $form = new admin_email_form();
 
 // Process data submission
@@ -81,7 +82,6 @@ if ($form->is_cancelled()) {
     //$fakeuser->id = 99999900 + $i;
     //$fakeuser->email = trim($additional_email);
     
-    
     $message = new Message($data, array_keys($users));
     
     $message->send();
@@ -93,18 +93,26 @@ if ($form->is_cancelled()) {
 }
 
 echo $OUTPUT->header();
+
 echo $OUTPUT->heading($header);
+
+
 
 // Notify the admin.
 if(!empty($message->warnings)) {
     foreach($message->warnings as $warning) {
         echo $OUTPUT->notification($warning);
+        
+
+        
     }
 }
 
 // Start work
 $ufiltering->display_add();
 $ufiltering->display_active();
+// DWE -> Change to moodle method  
+echo '<a href="emaillog.php?courseid=1"> View Log </a>';
 
 $paging_bar = !$sql ? '' :
     $OUTPUT->paging_bar($usersearchcount, $page, $perpage,
@@ -114,6 +122,7 @@ $paging_bar = !$sql ? '' :
             'perpage' => $perpage
         )
     ));
+
 
 if(!empty($sql)) {
     echo $OUTPUT->heading("Found $usersearchcount User(s)");

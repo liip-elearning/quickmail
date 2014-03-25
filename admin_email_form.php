@@ -37,7 +37,12 @@ class admin_email_form extends moodleform {
         $mform->addRule('subject', null, 'required', 'client');
         $mform->addRule('noreply', null, 'required', 'client');
         $mform->addRule('body', null, 'required');
-                
+        
+        // DWE -> Retrieve the signatures here
+        //$options = $this->_customdata['sigs'] + array(-1 => 'No '. quickmail::_s('sig'));
+        //$options = ' ';
+        $mform->addElement('select', 'sigid', quickmail::_s('signature'));
+
     }
 
     function validation($data, $files) {

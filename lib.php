@@ -480,8 +480,11 @@ class Message {
             $sentUsers,
             $startTime,
             $endTime,
+            // DWE -> From Dave's Admin Email + Quickmail Merge 
+            // additional variables that are needed for the new boxes. 
+            $attachment,
             $additional_email;
-    
+            
     public function __construct($data, $users){
         global $DB;
         $this->warnings = array();
@@ -498,8 +501,9 @@ class Message {
         // need to put in a foreach loop for multiple
         // emails
         
-        $this->additional_email = $data->additional_emails;
-        
+        $this->additional_emails = $data->additional_emails;
+        $this->attachmentnames = quickmail::attachment_names($data->attachments);
+
     }
     
     public function send($users = null){
@@ -533,17 +537,21 @@ class Message {
             else{
                 $this->sentUsers[] = $user->username;
             }
-            // @todo -> DWE -> you should try and create a fake user here and email them
+            //  DWE -> create a fake user here and email them
             
             // need to turn this into a for each loop
             
-            
+            $i = 0;
             if(isset($this->additional_email)){
-                $i = 0;
-                $fakeuser = new object();
-                $fakeuser -> id = 99999900 + $i;
-                $fakeuser-> email = trim ($this->additional_email);
-                email_to_user($fakeuser, $noreplyUser, $this->subject, $this->text);
+                
+                foreach ( explode(',', $this->additional_emails) as $additional_email)
+                {
+                    $fakeuser = new object();
+                    $fakeuser -> id = 99999900 + $i;
+                    $fakeuser-> email = trim($additional_email);
+                    
+                    email_to_user($fakeuser, $noreplyUser, $this->subject, $this->text, $this->attachmentnames);
+                }
             }
             
             

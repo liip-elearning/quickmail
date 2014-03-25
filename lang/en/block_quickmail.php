@@ -32,6 +32,7 @@ $string['attachment'] = 'Attachment(s)';
 $string['subject'] = 'Subject';
 $string['message'] = 'Message';
 $string['send_email'] = 'Send Email';
+$string['send_admin_email'] = 'Send Administrative Email';
 $string['save_draft'] = 'Save Draft';
 $string['actions'] = 'Actions';
 $string['signature'] = 'Signatures';

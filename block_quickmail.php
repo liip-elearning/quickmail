@@ -57,8 +57,9 @@ class block_quickmail extends block_list {
 
         $cparam = array('courseid' => $COURSE->id);
         
+        
         if(is_siteadmin($USER->id)){
-            $send_email_str = get_string('send_email', 'block_admin_email');
+            $send_email_str = get_string('send_admin_email', 'block_quickmail');
             $send_email_href = new moodle_url('/blocks/quickmail/adminemail.php');
             $send_email = html_writer::link($send_email_href, $send_email_str);
             $this->content->items[] = $send_email;
@@ -66,9 +67,11 @@ class block_quickmail extends block_list {
             $this->content->icons[] =
                 $OUTPUT->pix_icon('i/email', $send_email_str,
                     'moodle', array('class' => 'icon'));
-            return $this->content;
+            //return $this->content;
 
         }
+         
+         
         
         
         
