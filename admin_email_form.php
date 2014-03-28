@@ -6,7 +6,7 @@ require_once $CFG->libdir . '/formslib.php';
 
 class admin_email_form extends moodleform {
     function definition() {
-        global $CFG;
+        global $CFG, $DB, $USER;
         
         $mform =& $this->_form;
         
@@ -19,10 +19,11 @@ class admin_email_form extends moodleform {
         $mform->addElement('text', 'noreply', get_string('noreply', 'block_admin_email'));
         $mform->setType('noreply', PARAM_TEXT);
         
-        $mform->addElement('editor', 'body',  get_string('body', 'block_admin_email'));
+        $mform->addElement('editor', 'message_editor',  get_string('body', 'block_admin_email'));
 
         $buttons = array(
             $mform->createElement('submit', 'send', get_string('send_email', 'block_admin_email')),
+            $mform->createElement('submit', 'draft', quickmail::_s('save_draft')),
             $mform->createElement('cancel', 'cancel', get_string('cancel'))
         );
         
@@ -36,12 +37,15 @@ class admin_email_form extends moodleform {
 
         $mform->addRule('subject', null, 'required', 'client');
         $mform->addRule('noreply', null, 'required', 'client');
-        $mform->addRule('body', null, 'required');
+        $mform->addRule('message_editor', null, 'required');
         
         // DWE -> Retrieve the signatures here
         //$options = $this->_customdata['sigs'] + array(-1 => 'No '. quickmail::_s('sig'));
         //$options = ' ';
-        $mform->addElement('select', 'sigid', quickmail::_s('signature'));
+        
+        $options = $this->_customdata['sigs'] + array(-1 => 'No '. quickmail::_s('sig'));
+
+        $mform->addElement('select', 'sigid', quickmail::_s('signature'), $options);
 
     }
 

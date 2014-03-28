@@ -8,7 +8,7 @@ require_once "$CFG->libdir/adminlib.php";
 require_once "$CFG->dirroot/user/filters/lib.php";
 require_once 'lib.php';
 require_once 'admin_email_form.php';
-
+require_once 'message.php';
 require_login();
 
 $page       = optional_param('page', 0, PARAM_INT);
@@ -19,8 +19,11 @@ $direction  = optional_param('dir', 'ASC', PARAM_ACTION);
 $blockname  = get_string('pluginname', 'block_admin_email');
 $header     = get_string('send_email', 'block_admin_email');
 
-$context    = get_context_instance(CONTEXT_SYSTEM);
+$type = optional_param('type', '', PARAM_ALPHA);
+$typeid = optional_param('typeid', 0, PARAM_INT);
 
+//$context    = get_context_instance(CONTEXT_SYSTEM);
+$context    = context_system::instance();
 $PAGE->set_context($context);
 $PAGE->set_url('/blocks/admin_email/');
 $PAGE->navbar->add($blockname);
@@ -66,8 +69,21 @@ $users          = empty($sql) ? array() :
     get_users_listing($sort, $direction, 0, 
     0, '', '', '', $sql, $params);
 
+$sigs = $DB->get_records('block_quickmail_signatures', array('userid' => $USER->id), 'default_flag DESC');
 
-$form = new admin_email_form();
+$editor_options = array(
+    'trusttext' => true,
+    'subdirs' => 1,
+    'maxfiles' => EDITOR_UNLIMITED_FILES,
+    'accepted_types' => '*',
+    'context' => $context
+);
+
+
+$form = new admin_email_form(null, array(
+    'editor_options' => $editor_options,
+    'sigs' => array_map(function($sig) { return $sig->title; }, $sigs))
+);
 
 // Process data submission
 if ($form->is_cancelled()) {
@@ -82,7 +98,7 @@ if ($form->is_cancelled()) {
     //$fakeuser->id = 99999900 + $i;
     //$fakeuser->email = trim($additional_email);
     
-    $message = new Message($data, array_keys($users));
+    $message = new Message($data, array_keys($users), $type, $typeid);
     
     $message->send();
     $message->sendAdminReceipt();
@@ -95,6 +111,7 @@ if ($form->is_cancelled()) {
 echo $OUTPUT->header();
 
 echo $OUTPUT->heading($header);
+echo '<b><a href="emaillog.php?courseid=1"> View Log </a></b><br /><p></p>';
 
 
 
@@ -112,7 +129,6 @@ if(!empty($message->warnings)) {
 $ufiltering->display_add();
 $ufiltering->display_active();
 // DWE -> Change to moodle method  
-echo '<a href="emaillog.php?courseid=1"> View Log </a>';
 
 $paging_bar = !$sql ? '' :
     $OUTPUT->paging_bar($usersearchcount, $page, $perpage,

@@ -161,7 +161,7 @@ function xmldb_block_quickmail_upgrade($oldversion) {
     if ($oldversion < 2012061112) {
     	migrate_quickmail_20();
     }
-if($oldversion < 2014022713){
+    if($oldversion < 2014022713){
 
         // Define field status to be added to block_quickmail_log.
         $table = new xmldb_table('block_quickmail_log');
@@ -177,5 +177,20 @@ if($oldversion < 2014022713){
         // Quickmail savepoint reached.
         upgrade_block_savepoint(true, 2014022713, 'quickmail');
     }
+    if ($oldversion < 2014032601) {
+
+        // Define field additional_emails to be added to block_quickmail_log.
+        $table = new xmldb_table('block_quickmail_log');
+        $field = new xmldb_field('additional_emails', XMLDB_TYPE_TEXT, null, null, null, null, null, 'time');
+
+        // Conditionally launch add field additional_emails.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Quickmail savepoint reached.
+        upgrade_block_savepoint(true, 2014032601, 'quickmail');
+    }
+
     return $result;
 }

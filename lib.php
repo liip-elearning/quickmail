@@ -467,115 +467,44 @@ function block_quickmail_pluginfile($course, $record, $context, $filearea, $args
     }
 }
 
-
-class Message {
-    
-    public  $subject, 
-            $text, 
-            $html, 
-            $users,
-            $admins,
-            $warnings, 
-            $noreply, 
-            $sentUsers,
-            $startTime,
-            $endTime,
-            // DWE -> From Dave's Admin Email + Quickmail Merge 
-            // additional variables that are needed for the new boxes. 
-            $attachment,
-            $additional_email;
-            
-    public function __construct($data, $users){
-        global $DB;
-        $this->warnings = array();
-        
-        $this->subject  = $data->subject;
-        $this->html     = $data->body['text'];
-        $this->text     = strip_tags($data->body['text']);
-        $this->noreply  = $data->noreply;
-        $this->warnings = array();
-        $this->users    = array_values($DB->get_records_list('user', 'id', $users));
-    
-        // DWE -> Since were passing $data 
-        // we can just assign it to the message object
-        // need to put in a foreach loop for multiple
-        // emails
-        
-        $this->additional_emails = $data->additional_emails;
-        $this->attachmentnames = quickmail::attachment_names($data->attachments);
-
-    }
-    
-    public function send($users = null){
-
-        $this->startTime = time();
-        $users = empty($users) ? $this->users : $users;
-
-        $noreplyUser                = new stdClass();
-        $noreplyUser->firstname     = 'Moodle';
-        $noreplyUser->lastname      = 'Administrator';
-        $noreplyUser->username      = 'moodleadmin';
-        $noreplyUser->email         = $this->noreply;
-        $noreplyUser->maildisplay   = 2;
-
-        foreach($users as $user) {
-
-            $success = email_to_user(
-                    $user,          // to
-                    $noreplyUser,   // from
-                    $this->subject, // subj
-                    $this->text,    // body in plain text
-                    $this->html,    // body in HTML
-                    '',             // attachment
-                    '',             // attachment name
-                    true,           // user true address ($USER)
-                    $this->noreply, // reply-to address
-                    get_string('pluginname', 'block_admin_email') // reply-to name
-                    );
-            if(!$success)
-                $this->warnings[] = get_string('email_error', 'block_admin_email', $user);
-            else{
-                $this->sentUsers[] = $user->username;
+// DWE -> NEW FUNCTION TO CREATE FAKE USERS FOR ADDITIONAL EMAIL FIELDS
+// IN BOTH THE ADMIN FORM AND THE QUICK FORM
+// takes in array of email addresses, makes a fake user object for each and proceeds to email each one
+function create_and_email_fake_users($arrayOfEmails){
+    foreach($arrayOfEmails as $additional_email){
+        $additional_email = trim($additional_email);
+        if ( ! (validate_email($additional_email) ) ) {
+            if($additional_email !== ''){
+                $warnings[] = get_string("no_email_address", 'block_quickmail', $additional_email);
             }
-            //  DWE -> create a fake user here and email them
-            
-            // need to turn this into a for each loop
-            
-            $i = 0;
-            if(isset($this->additional_email)){
-                
-                foreach ( explode(',', $this->additional_emails) as $additional_email)
-                {
-                    $fakeuser = new object();
-                    $fakeuser -> id = 99999900 + $i;
-                    $fakeuser-> email = trim($additional_email);
-                    
-                    email_to_user($fakeuser, $noreplyUser, $this->subject, $this->text, $this->attachmentnames);
-                }
-            }
-            
-            
+            continue;
         }
-        $this->endTime = time();
-    }
-    
-    public function buildAdminReceipt(){
-        global $CFG, $DB;
-        $adminIds     = explode(',',$CFG->siteadmins);
-        $this->admins = $DB->get_records_list('user', 'id',$adminIds);
+        $fakeuser = new object();
+        $fakeuser->id = 99999900 + $i;
+        $fakeuser->email = $additional_email;
+        $fakeuser->mailformat = 1;
         
-        $usersLine  = sprintf("Message sent to %d/%d users.<br/>", count($this->sentUsers), count($this->users));
-        $timeLine   = sprintf("Time elapsed: %d seconds<br/>", $this->endTime - $this->startTime);
-        $warnline   = sprintf("Warnings: %d<br/>", count($this->warnings));
-        $msgLine    = sprintf("message body as follows<br/><br/><hr/>%s<hr/>", $this->html);
-        $recipLine  = sprintf("sent successfully to the following users:<br/><br/>%s", implode(',', $this->sentUsers));
-        return $usersLine.$warnline.$timeLine.$msgLine.$recipLine;
+        $additional_email_success = email_to_user($fakeuser, $user, $subject, striptags($data->message), $data->message);
+        
+        if(!additional_email_success){
+            $data->failuserids[] = $additional_email;
+            
+            //will need to notify that an email is incorrect
+            $warnings[] = get_string("no_email_address", "block_quickmail", $fakeuser->email);
+        }
+        //insert successful emails into additional_emails column in quickmail_log table
+        else{
+        }
+        $i++;
     }
     
-    public function sendAdminReceipt(){
-        $this->html = $this->buildAdminReceipt();
-        $this->text = $this->buildAdminReceipt();
-        $this->subject = "Admin Email send receipt";
-        $this->send($this->admins);
+    $data->failuserids = implode(',', $data->failuserids);
+    $DB->update_record('block_quickmail_log', $data);
+    
+    if($data->receipt){
+        email_to_user($USER, $user, $subject, strip_tags($data->message), $data->message);
     }
+    
 }
+    
+

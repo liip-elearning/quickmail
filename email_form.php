@@ -215,7 +215,8 @@ class email_form extends moodleform {
 
         $options = $this->_customdata['sigs'] + array(-1 => 'No '. quickmail::_s('sig'));
         $mform->addElement('select', 'sigid', quickmail::_s('signature'), $options);
-
+        $mform->setDefault('sigid', -1);
+        
         $radio = array(
             $mform->createElement('radio', 'receipt', '', get_string('yes'), 1),
             $mform->createElement('radio', 'receipt', '', get_string('no'), 0)

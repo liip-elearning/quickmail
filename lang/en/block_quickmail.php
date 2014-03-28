@@ -12,6 +12,7 @@ $string['restore_history'] = 'Restore Quickmail History';
 $string['overwrite_history'] = 'Overwrite Quickmail History';
 $string['alternate'] = 'Alternate Emails';
 $string['composenew'] = 'Compose New Email';
+$string['composenewadmin'] = 'Compose New Admin Email';
 $string['email'] = 'Email';
 $string['drafts'] = 'View Drafts';
 $string['history'] = 'View History';

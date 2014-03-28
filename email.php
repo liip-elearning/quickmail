@@ -142,6 +142,8 @@ if (empty($users)) {
 
 
 // we are presenting the form with values populated from either the log or drafts table in the db
+// DWE -> IS THIS WHERE WE SHOULD PUT IF (ADMIN_EMAIL) ETC...
+// possibly? maybe? perchance?
 if (!empty($type)) {
     
 
@@ -173,10 +175,13 @@ if (!empty($type)) {
 $email->messageformat = $email->format;
 $email->messagetext = $email->message;
 
-$default_sigid = $DB->get_field('block_quickmail_signatures', 'id', array(
-    'userid' => $USER->id, 'default_flag' => 1
-));
-$email->sigid = $default_sigid ? $default_sigid : -1;
+if($messageIDresend === 0 && $type !== "log"){
+    $default_sigid = $DB->get_field('block_quickmail_signatures', 'id', array(
+        'userid' => $USER->id, 'default_flag' => 1
+    ));
+    $email->sigid = $default_sigid ? $default_sigid : -1;
+
+}
 
 // Some setters for the form
 $email->type = $type;
@@ -300,6 +305,7 @@ if ($form->is_cancelled()) {
                 $user = $USER;
             }
             $data->failuserids = array();
+            //$data->save_additional_emails = array();
             if(!empty($data->mailto)) {
                 foreach (explode(',', $data->mailto) as $userid) {
                     // WHERE THE ACTUAL EMAILING IS HAPPENING
@@ -331,7 +337,7 @@ if ($form->is_cancelled()) {
                 $fakeuser = new object();
                 $fakeuser->id = 99999900 + $i;
                 $fakeuser->email = $additional_email;
-
+                $fakeuser->mailformat = 1;
 
                 $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->message), $data->message);
 
@@ -343,12 +349,17 @@ if ($form->is_cancelled()) {
                     // will need to notify that an email is incorrect
                     $warnings[] = get_string("no_email_address", 'block_quickmail', $fakeuser->email);
                 }
+                //insert successful emails into additional_emails column in quickmail_log table
+                else{
+                    //$data->save_additional_emails[] = $additional_email;
+                }
 
                 $i++;
             }
             
-
+            
             $data->failuserids = implode(',', $data->failuserids);
+            //$data->save_additional_emails = implode(',', $data->additional_emails);
             $DB->update_record('block_quickmail_log', $data);
 
             if ($data->receipt) {
