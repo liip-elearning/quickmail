@@ -261,7 +261,7 @@ abstract class quickmail {
     }
 
     static function list_entries($courseid, $type, $page, $perpage, $userid, $count, $can_delete) {
-        global $CFG, $DB, $OUTPUT;
+        global $CFG, $DB, $OUTPUT, $COURSE, $PAGE, $SITE;
 
         $dbtable = 'block_quickmail_'.$type;
 
@@ -292,11 +292,21 @@ abstract class quickmail {
             );
 
             $actions = array();
-
-            $open_link = html_writer::link(
+            
+            // DWE -> switch the magnifying glass link if your in admin mail
+            
+            if($COURSE->id == $SITE->id){
+                $open_link = html_writer::link(
+                new moodle_url('/blocks/quickmail/adminemail.php', $params),
+                $OUTPUT->pix_icon('i/search', 'Open Email')
+                );
+            }
+            else{
+                $open_link = html_writer::link(
                 new moodle_url('/blocks/quickmail/email.php', $params),
                 $OUTPUT->pix_icon('i/search', 'Open Email')
-            );
+                );
+            }
             $actions[] = $open_link;
 
             if ($can_delete) {
@@ -322,7 +332,12 @@ abstract class quickmail {
                     'fmid' => 1,
                 );
                 $text = quickmail::_s('send_again');
-                $sendagain = html_writer::link(new moodle_url("/blocks/quickmail/email.php", $params), $text);
+                if($COURSE->id == $SITE->id){
+                    $sendagain = html_writer::link(new moodle_url("/blocks/quickmail/adminemail.php", $params), $text);
+                }
+                else{
+                    $sendagain = html_writer::link(new moodle_url("/blocks/quickmail/email.php", $params), $text);
+                }
                 $listFailIDs = count($array_of_failed_user_ids);
                 
                 $failCount =  (($listFailIDs === 1) ?  $listFailIDs . " " . quickmail::_s("user") :  $listFailIDs . " " . quickmail::_s("users"));         
@@ -429,6 +444,39 @@ abstract class quickmail {
 
         return $evryone_not_suspended;
     }
+    public static function clean($failuserids){
+        $additional_emails = array();
+        $failuserids = explode(',', $failuserids);        
+    
+        foreach ($failuserids as $id => $failed_address_or_id) {
+            if ( ! is_numeric($failed_address_or_id)) {
+                $additional_emails [] = $failed_address_or_id;
+                
+                 
+                unset($failuserids[$id]);
+            }
+        }
+        
+        $additional_emails = implode(',', $additional_emails);
+        $mailto            = implode(',', $failuserids);
+
+        return array($mailto, $additional_emails);
+    }
+    
+    public static function printNget_paging_bar($page=0, $perpage=20, $sort='', $direction='ASC', $type = '', $typeid = 0, $totalusers){
+        global $OUTPUT;
+        $paging_bar = $OUTPUT->paging_bar($totalusers, $page, $perpage, new moodle_url('/blocks/quickmail/adminemail.php', array(
+            'sort' => $sort,
+            'dir' => $direction,
+            'perpage' => $perpage,
+            'type' => $type,
+            'typeid' => $typeid
+        )));
+
+        echo $paging_bar;
+
+    }    
+    
 }
 
 function block_quickmail_pluginfile($course, $record, $context, $filearea, $args, $forcedownload) {
@@ -465,12 +513,19 @@ function block_quickmail_pluginfile($course, $record, $context, $filearea, $args
         $file = $fs->get_file_by_id($instanceid);
         send_stored_file($file);
     }
+    
+    
+    
+    
 }
 
 // DWE -> NEW FUNCTION TO CREATE FAKE USERS FOR ADDITIONAL EMAIL FIELDS
 // IN BOTH THE ADMIN FORM AND THE QUICK FORM
 // takes in array of email addresses, makes a fake user object for each and proceeds to email each one
-function create_and_email_fake_users($arrayOfEmails){
+function create_and_email_fake_users($arrayOfEmails, $user, $subject, $data, $warnings){
+    GLOBAL $DB;
+    $i = 0;
+    
     foreach($arrayOfEmails as $additional_email){
         $additional_email = trim($additional_email);
         if ( ! (validate_email($additional_email) ) ) {
@@ -484,13 +539,14 @@ function create_and_email_fake_users($arrayOfEmails){
         $fakeuser->email = $additional_email;
         $fakeuser->mailformat = 1;
         
-        $additional_email_success = email_to_user($fakeuser, $user, $subject, striptags($data->message), $data->message);
-        
-        if(!additional_email_success){
+        $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->message), $data->message);
+        $additional_email_success = FALSE;
+        if(!$additional_email_success){
             $data->failuserids[] = $additional_email;
             
             //will need to notify that an email is incorrect
             $warnings[] = get_string("no_email_address", "block_quickmail", $fakeuser->email);
+            //var_dump($warnings);
         }
         //insert successful emails into additional_emails column in quickmail_log table
         else{
@@ -504,7 +560,10 @@ function create_and_email_fake_users($arrayOfEmails){
     if($data->receipt){
         email_to_user($USER, $user, $subject, strip_tags($data->message), $data->message);
     }
+    return $warnings;
     
 }
+
+
     
 

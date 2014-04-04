@@ -123,10 +123,9 @@ foreach ($everyone as $userid => $user) {
     $filterd = quickmail::filter_roles($userroles, $roles);
 
     // Available groups
-    if ((!$globalaccess and !$mastercap) and
-        empty($gids) or empty($filterd) or $userid == $USER->id)
+    if ((!$globalaccess and !$mastercap) and empty($gids) or empty($filterd) or $userid == $USER->id){
         continue;
-
+    }
     $groupmapper = function($id) use ($allgroups) { return $allgroups[$id]; };
 
     $users_to_groups[$userid] = array_map($groupmapper, $gids);
@@ -149,21 +148,24 @@ if (!empty($type)) {
 
     $email = $DB->get_record('block_quickmail_' . $type, array('id' => $typeid));
 
-    if ($messageIDresend == 1) {
-        $email->additional_emails = array();
-        $email->failuserids = explode(',', $email->failuserids);        
-    
-        foreach ($email->failuserids as $failed_address_or_id) {
-            if ( ! is_numeric($failed_address_or_id)) {
-                $email->additional_emails [] = $failed_address_or_id;
-                unset($failed_address_or_id);
-            }
-        }
-        
-        $email->additional_emails = implode(',', $email->additional_emails);
-        $email->mailto 		  = implode(',', $email->failuserids);
-
-    }
+    list($email->mailto, $email->additional_emails) = quickmail::clean($email->failuserids);
+//    //if ($messageIDresend == 1) {
+//        $email->additional_emails = array();
+//        $email->failuserids = explode(',', $email->failuserids);        
+//    
+//        foreach ($email->failuserids as $failed_address_or_id) {
+//            if ( ! is_numeric($failed_address_or_id)) {
+//                $email->additional_emails [] = $failed_address_or_id;
+//                
+//                 current($email->failuserids);
+//                //unset($failed_address_or_id);
+//            }
+//        }
+//        
+//        $email->additional_emails = implode(',', $email->additional_emails);
+//        $email->mailto 		  = implode(',', $email->failuserids);
+//
+//    //}
 } else {
     $email = new stdClass;
     $email->id = null;
@@ -320,51 +322,9 @@ if ($form->is_cancelled()) {
 
 
         $additional_email_array = explode(',', $data->additional_emails);
-
-
-            $i = 0;
-
-            foreach ($additional_email_array as $additional_email) {
-                $additional_email = trim($additional_email); 
-                if( ! (validate_email($additional_email))){
-		    if($additional_email !== ''){
-                        $warnings[] = get_string("no_email_address", 'block_quickmail', $additional_email);
-		    }
-		    continue;
-		}
-
-
-                $fakeuser = new object();
-                $fakeuser->id = 99999900 + $i;
-                $fakeuser->email = $additional_email;
-                $fakeuser->mailformat = 1;
-
-                $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->message), $data->message);
-
-                //force fail
-
-                if (!$additional_email_success) {
-                    $data->failuserids[] = $additional_email;
-
-                    // will need to notify that an email is incorrect
-                    $warnings[] = get_string("no_email_address", 'block_quickmail', $fakeuser->email);
-                }
-                //insert successful emails into additional_emails column in quickmail_log table
-                else{
-                    //$data->save_additional_emails[] = $additional_email;
-                }
-
-                $i++;
-            }
-            
-            
-            $data->failuserids = implode(',', $data->failuserids);
-            //$data->save_additional_emails = implode(',', $data->additional_emails);
-            $DB->update_record('block_quickmail_log', $data);
-
-            if ($data->receipt) {
-                email_to_user($USER, $user, $subject, strip_tags($data->message), $data->message);
-            }
+        
+        $warnings = create_and_email_fake_users($additional_email_array, $user, $subject, $data, $warnings);
+               
         }
     }
     $email = $data;
