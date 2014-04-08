@@ -147,8 +147,14 @@ if (!empty($type)) {
     
 
     $email = $DB->get_record('block_quickmail_' . $type, array('id' => $typeid));
-
-    list($email->mailto, $email->additional_emails) = quickmail::clean($email->failuserids);
+    if($type == "log"){
+        if($messageIDresend == '1'){
+            list($email->mailto, $email->additional_emails) = quickmail::clean($email->failuserids);
+        }
+    }
+    else if ($type == "draft"){
+        
+    }
 //    //if ($messageIDresend == 1) {
 //        $email->additional_emails = array();
 //        $email->failuserids = explode(',', $email->failuserids);        
@@ -177,13 +183,13 @@ if (!empty($type)) {
 $email->messageformat = $email->format;
 $email->messagetext = $email->message;
 
-if($messageIDresend === 0 && $type !== "log"){
+//if($messageIDresend === 0 && $type !== "log"){
     $default_sigid = $DB->get_field('block_quickmail_signatures', 'id', array(
         'userid' => $USER->id, 'default_flag' => 1
     ));
     $email->sigid = $default_sigid ? $default_sigid : -1;
 
-}
+//}
 
 // Some setters for the form
 $email->type = $type;
@@ -242,7 +248,7 @@ if ($form->is_cancelled()) {
         $data->format = $data->message_editor['format'];
         $data->message = $data->message_editor['text'];
         $data->attachment = quickmail::attachment_names($data->attachments);
-
+        $data->messagewithsig = "";
         // Store data; id is needed for file storage
         if (isset($data->send)) {
             $data->id = $DB->insert_record('block_quickmail_log', $data);
@@ -288,7 +294,7 @@ if ($form->is_cancelled()) {
                 $signaturetext = file_rewrite_pluginfile_urls($sig->signature, 'pluginfile.php', $context->id, 'block_quickmail', 'signature', $sig->id, $editor_options);
 
 
-                $data->message .= "\n\n" .$signaturetext;
+                $data->messagewithsig = $data->message . "\n\n" .$signaturetext;
             }
 
             // Append links to attachments, if any

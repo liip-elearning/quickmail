@@ -142,6 +142,9 @@ if ( $type == 'log' ) {
 
     if ( $messageIDresend == '1' ) {
         list($get_emails_and_users->mailto, $get_emails_and_users->additional_emails) = quickmail::clean($get_emails_and_users->failuserids);
+        echo html_writer::tag('h2', get_string('previously_failed', 'block_quickmail'));
+
+        
     }
 
     $users = $get_emails_and_users->mailto;
@@ -152,9 +155,8 @@ if ( $type == 'log' ) {
         $sql = 'id IN (' . $get_emails_and_users->mailto . ')';
     }
 
-    echo html_writer::tag('h2', get_string('previously_failed', 'block_quickmail'));
 
-    $theusers = $DB->get_records_list('user', 'id', explode(',', $get_emails_and_users->mailto));
+    $display_users = $DB->get_records_list('user', 'id', explode(',', $get_emails_and_users->mailto));
 
     $columns = array('firstname', 'lastname', 'email', 'city', 'lastaccess');
 
@@ -238,7 +240,10 @@ if(!empty($display_users)){
     }
 
     $form->set_data(array('noreply' => $CFG->noreplyaddress));
-
     echo $form->display();
+
 }
+
+ 
+
 echo $OUTPUT->footer();

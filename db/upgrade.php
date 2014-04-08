@@ -191,6 +191,22 @@ function xmldb_block_quickmail_upgrade($oldversion) {
         // Quickmail savepoint reached.
         upgrade_block_savepoint(true, 2014032601, 'quickmail');
     }
+    
+    
+        if ($oldversion < 2014032802) {
+
+        // Define field additional_emails to be added to block_quickmail_drafts.
+        $table = new xmldb_table('block_quickmail_drafts');
+        $field = new xmldb_field('additional_emails', XMLDB_TYPE_TEXT, null, null, null, null, null, 'time');
+
+        // Conditionally launch add field additional_emails.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Quickmail savepoint reached.
+        upgrade_block_savepoint(true, 2014032802, 'quickmail');
+    }
 
     return $result;
 }

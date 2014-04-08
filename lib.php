@@ -271,9 +271,14 @@ abstract class quickmail {
         $logs = $DB->get_records($dbtable, $params,
             'time DESC', '*', $page * $perpage, $perpage);
         
-        $table->head= array(get_string('date'), quickmail::_s('subject'),
-            quickmail::_s('attachment'), get_string('action'), quickmail::_s('status'), quickmail::_s('failed_to_send_to'),quickmail::_s('send_again'));
-        
+        if($type == "drafts"){
+            $table->head= array(get_string('date'), quickmail::_s('subject'),
+                quickmail::_s('attachment'), get_string('action'),  quickmail::_s('failed_to_send_to'),quickmail::_s('send_again'));        
+        }
+        else{
+            $table->head= array(get_string('date'), quickmail::_s('subject'),
+                quickmail::_s('attachment'), get_string('action'), quickmail::_s('status'), quickmail::_s('failed_to_send_to'),quickmail::_s('send_again'));
+        }
         
         $table->data = array();
         foreach ($logs as $log) {
@@ -324,6 +329,7 @@ abstract class quickmail {
             }
 
             $action_links = implode(' ', $actions);
+
             $statusSENTorNot = quickmail::_s('sent_success');
             
             if ( ! empty ($array_of_failed_user_ids) ){
@@ -350,8 +356,12 @@ abstract class quickmail {
                 $sendagain = "";
                 $failCount = "";
             }
-
-            $table->data[] = array($date, $subject, $attachments, $action_links, $statusSENTorNot,$failCount,$sendagain);
+            if($type == "drafts"){
+                $table->data[] = array($date, $subject, $attachments, $action_links,$failCount,$sendagain);
+            }
+            else{
+                $table->data[] = array($date, $subject, $attachments, $action_links, $statusSENTorNot,$failCount,$sendagain);
+            }
         }
 
         $paging = $OUTPUT->paging_bar($count, $page, $perpage,
@@ -539,8 +549,8 @@ function create_and_email_fake_users($arrayOfEmails, $user, $subject, $data, $wa
         $fakeuser->email = $additional_email;
         $fakeuser->mailformat = 1;
         
-        $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->message), $data->message);
-        $additional_email_success = FALSE;
+        $additional_email_success = email_to_user($fakeuser, $user, $subject, strip_tags($data->messagewithsig), $data->messagewithsig);
+        //$additional_email_success = FALSE;
         if(!$additional_email_success){
             $data->failuserids[] = $additional_email;
             
@@ -558,7 +568,7 @@ function create_and_email_fake_users($arrayOfEmails, $user, $subject, $data, $wa
     $DB->update_record('block_quickmail_log', $data);
     
     if($data->receipt){
-        email_to_user($USER, $user, $subject, strip_tags($data->message), $data->message);
+        email_to_user($USER, $user, $subject, strip_tags($data->messagewithsig), $data->messagewithsig);
     }
     return $warnings;
     

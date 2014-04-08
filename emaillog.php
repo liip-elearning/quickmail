@@ -90,7 +90,7 @@ switch ($action) {
         $html = quickmail::list_entries($courseid, $type, $page, $perpage, $userid, $count, $can_delete);
 }
 
-if($courseid === $SITE->id){
+if($courseid == $SITE->id){
 //if($courseid === 1){
 $html.= html_writer::link(
     new moodle_url(
@@ -147,8 +147,12 @@ if($canimpersonate) {
 if(empty($count)) {
     echo $OUTPUT->notification(quickmail::_s('no_'.$type));
 
-    echo $OUTPUT->continue_button('/blocks/quickmail/email.php?courseid='.$courseid);
-
+    if($courseid == $SITE->id){
+        echo $OUTPUT->continue_button('/blocks/quickmail/adminemail.php?courseid='.$courseid);
+    }
+    else{
+        echo $OUTPUT->continue_button('/blocks/quickmail/email.php?courseid='.$courseid);
+    }
     echo $OUTPUT->footer();
     exit;
 }

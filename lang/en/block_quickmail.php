@@ -44,6 +44,7 @@ $string['default_flag'] = 'Default';
 $string['config'] = 'Configuration';
 $string['receipt'] = 'Receive a copy';
 $string['receipt_help'] = 'Receive a copy of the email being sent';
+$string['saved_draft'] = 'Draft';
 
 $string['no_alternates'] = 'No alternate emails found for {$a->fullname}. Continue to make one.';
 
@@ -67,7 +68,7 @@ $string['no_drafts'] = 'You have no email drafts.';
 $string['no_subject'] = 'You must have a subject';
 $string['no_course'] = 'Invalid Course with id of {$a}';
 $string['no_permission'] = 'You do not have permission to send emails with Quickmail.';
-$string['no_usergroups'] = 'There are no users in your group capable of being emailed.';
+$string['no_usergroups'] = 'There are no users in your group capable of being emailed. This Error means that there are no users capable of being messaged in the selected groups or roles. If you feel you do have users capable of being emailed, you will want to check the configuration link in the quickmail block and either select what roles you want to filter by or try resetting the settings to the default.';
 $string['no_users'] = 'There are no users you are capable of emailing.';
 $string['no_selected'] = 'You must select some users for emailing.';
 $string['not_valid'] = 'This is not a valid email log viewer type: {$a}';
