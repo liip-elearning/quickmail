@@ -246,7 +246,7 @@ class Message {
         }
         
         if($this->additional_emails){
-            $recipLine      = sprintf("sent successfully to the following users:<br/><br/>%s", $names . "<br /> , and the following email addresses: " . $this->additional_emails);
+            $recipLine      = sprintf("sent successfully to the following users:<br/><br/>%s", $names . "<br />and the following email addresses: " . $this->additional_emails);
         }
         else{
             $recipLine      = sprintf("sent successfully to the following users:<br/><br/>%s", $names);

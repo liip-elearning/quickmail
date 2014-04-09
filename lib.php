@@ -533,7 +533,7 @@ function block_quickmail_pluginfile($course, $record, $context, $filearea, $args
 // IN BOTH THE ADMIN FORM AND THE QUICK FORM
 // takes in array of email addresses, makes a fake user object for each and proceeds to email each one
 function create_and_email_fake_users($arrayOfEmails, $user, $subject, $data, $warnings){
-    GLOBAL $DB;
+    GLOBAL $DB, $USER;
     $i = 0;
     
     foreach($arrayOfEmails as $additional_email){
