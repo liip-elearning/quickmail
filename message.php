@@ -19,12 +19,13 @@ class Message {
             // DWE -> From Dave's Admin Email + Quickmail Merge 
             // additional variables that are needed for the new boxes. 
             $attachment,
-            $additional_emails,
+            $messagewithsig,
             $context,
             $type,
             $typeid,
-    
+            $data,
             $message_id;
+          
 
     /**
      * 
@@ -38,20 +39,21 @@ class Message {
      */
     public function __construct($data, $mailto, $type, $typeid, $sigs) {
         global $DB, $USER, $COURSE;
-        
+        $this->data = $data;
+        $this->messagewithsig = "";
+        $this->additional_emails = array();
         $this->warnings     = array();
         $this->subject      = $data->subject;
         $this->html         = $data->message_editor['text'];
         $this->text         = strip_tags($data->message_editor['text']);
         $this->noreply      = $data->noreply;
-        $this->warnings     = array();
+        //$this->warnings     = array();
         $this->mailto       = array_values($DB->get_records_list('user', 'id', $mailto));
         $this->attachment   = quickmail::attachment_names($data->attachments);
         $this->context      = context_system::instance();
         $this->additional_emails    = $data->additional_emails;
         $this->type         = $type;
         $this->typeid       = $typeid;
-        //$this->signature    = $data->signature;
         $data -> mailto       = implode(',',$mailto);
         $data -> message      = $this->text;
         $data -> attachment   = $this->attachment;
@@ -121,7 +123,8 @@ class Message {
                 $signaturetext = file_rewrite_pluginfile_urls($sig->signature, 'pluginfile.php', $this->context->id, 'block_quickmail', 'signature', $sig->id, $editor_options);
 
 
-                $data->message .= "\n\n" . $signaturetext;
+                $data->messagewithsig = $data->message . "\n\n" . $signaturetext;
+                $this->messagewithsig = $data->message . "\n\n" . $signaturetext;
                 
             }
 
@@ -157,7 +160,8 @@ class Message {
         $data->failuserids = array();
         $data->id = $this->message_id;
         $this->startTime = time();
-
+        $data->messagewithsig = $this->messagewithsig;
+        //$data->messagewithsig = 
         $users = empty($users) ? $this->mailto : $users;
 
         $noreplyUser = new stdClass();
@@ -199,34 +203,19 @@ class Message {
             //  DWE -> create a fake user here and email them
             // need to turn this into a for each loop
         }
-            $i = 0;
-            if ( ($this->additional_emails !== "") && $sendToEmails ) {
+        
+        if($sendToEmails == true){
+            create_and_email_fake_users(explode(',',$this->additional_emails), $user, $this->subject, $data, $this->warnings);
+        }
 
-                foreach (explode(',', $this->additional_emails) as $additional_email) {
-                    $fakeuser = new object();
-                    $fakeuser->id = 99999900 + $i;
-                    $fakeuser->email = trim($additional_email);
-                    $fakeuser->mailformat = 1;
-                    $additional_email_success = email_to_user($fakeuser, $noreplyUser, $this->subject, $this->text, $this->html);
-                    //$additional_email_success = FALSE;
-                    if ( !$additional_email_success ) {
-                        $data->failuserids[] = $additional_email;
-
-                        // will need to notify that an email is incorrect
-                        $warnings[] = get_string("no_email_address", 'block_quickmail', $fakeuser->email);
-                    }
-
-                    $i++;
-                }
-            }
 
 
         
-        $this->endTime = time();
-        $data->failuserids = implode(',', $data->failuserids);
-        if($sendToEmails){
-            $DB->update_record('block_quickmail_log', $data);
-        }
+//        $this->endTime = time();
+//        $data->failuserids = implode(',', $data->failuserids);
+//        if($sendToEmails){
+//            $DB->update_record('block_quickmail_log', $data);
+//        }
     }
 
     public function buildAdminReceipt() {

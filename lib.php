@@ -567,7 +567,7 @@ function create_and_email_fake_users($arrayOfEmails, $user, $subject, $data, $wa
     $data->failuserids = implode(',', $data->failuserids);
     $DB->update_record('block_quickmail_log', $data);
     
-    if($data->receipt){
+    if(!empty($data->receipt)){
         email_to_user($USER, $user, $subject, strip_tags($data->messagewithsig), $data->messagewithsig);
     }
     return $warnings;
