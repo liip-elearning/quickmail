@@ -57,7 +57,16 @@ $capabilities = array(
             'editingteacher' => CAP_ALLOW,
             'coursecreator' => CAP_ALLOW
         ),
-
         'clonepermissionsfrom' => 'moodle/site:manageblocks'
+    ),
+
+    'block/quickmail:myaddinstance' => array(
+        'riskbitmask' => RISK_SPAM,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW
+        ),
+        'clonepermissionsfrom' => 'moodle/my:manageblocks'
     )
 );
