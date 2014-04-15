@@ -67,7 +67,7 @@ class block_quickmail extends block_list {
             $this->content->items[] = $send_email;
 
             $this->content->icons[] =
-                $OUTPUT->pix_icon('i/email', $send_email_str,
+                $OUTPUT->pix_icon('t/email', $send_email_str,
                     'moodle', array('class' => 'icon'));
             //return $this->content;
 
