@@ -21,17 +21,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+require_once('../../config.php');
+require_once("$CFG->dirroot/course/lib.php");
+require_once("$CFG->libdir/adminlib.php");
+require_once("$CFG->dirroot/user/filters/lib.php");
+require_once('lib.php');
+require_once('classes/message.php');
+require_once('admin_email_form.php');
 global $CFG, $USER, $SESSION, $PAGE, $SITE, $OUTPUT, $DB;
-require_once '../../config.php';
-require_once "$CFG->dirroot/course/lib.php";
-require_once "$CFG->libdir/adminlib.php";
-require_once "$CFG->dirroot/user/filters/lib.php";
-require_once 'lib.php';
-require_once 'classes/message.php';
-require_once 'admin_email_form.php';
 
 require_login();
-// get page params
+// Get page params.
 $page       = optional_param('page', 0, PARAM_INT);
 $perpage    = optional_param('perpage', 20, PARAM_INT);
 $sort       = optional_param('sort', 'lastname', PARAM_ACTION);
@@ -46,9 +46,9 @@ $header     = get_string('sendadmin', 'block_quickmail');
 
 $context    = context_system::instance();
 
-if(has_capability('block/quickmail:myaddinstance', $context) || is_siteadmin($USER)) {
-    // page params for ui filter
-    $filterparams = $typeid > 0 ? array('courseid'=>$courseid, 'type'=>$type, 'typeid'=>$typeid) : null;
+if (has_capability('block/quickmail:myaddinstance', $context) || is_siteadmin($USER)) {
+    // Page params for ui filter.
+    $filterparams = $typeid > 0 ? array('courseid' => $courseid, 'type' => $type, 'typeid' => $typeid) : null;
 
     $PAGE->set_context($context);
     $PAGE->set_url($CFG->wwwroot . '/blocks/quickmail/admin_email.php');
@@ -58,19 +58,19 @@ if(has_capability('block/quickmail:myaddinstance', $context) || is_siteadmin($US
     $PAGE->set_pagetype(quickmail::PAGE_TYPE);
     $PAGE->set_pagelayout('standard');
 
-    if($type == 'log'){
-        $log_message = $DB->get_record('block_quickmail_' . $type, array('id' => $typeid));
-        // try to get the saved, serialized filters from mailto.
-        if(isset($log_message->mailto)) {
-            // will give a Notice if content of mailto in not unserializable.
-            $filters = @unserialize($log_message->mailto);
-        if (  $filters !== false && is_array($filters) && ( empty($_POST['addfilter']) && empty($_POST['removeselected']) )  ){
+    if ($type == 'log') {
+        $logmessage = $DB->get_record('block_quickmail_' . $type, array('id' => $typeid));
+        // Try to get the saved, serialized filters from mailto.
+        if (isset($logmessage->mailto)) {
+            // Will give a Notice if content of mailto in not unserializable.
+            $filters = @unserialize($logmessage->mailto);
+            if ($filters !== false && is_array($filters) && ( empty($_POST['addfilter']) && empty($_POST['removeselected']))) {
                 $SESSION->user_filtering = $filters;
             }
         }
     }
 
-    // Get Our users
+    // Get our users.
     $fields = array(
         'realname'      => 1,
         'lastname'      => 1,
@@ -101,22 +101,20 @@ if(has_capability('block/quickmail:myaddinstance', $context) || is_siteadmin($US
 
     $ufiltering         = new user_filtering($fields, null, $filterparams);
     list($sql, $params) = $ufiltering->get_sql_filter();
-    $usersearchcount    = get_users(false, '', true, null, '', '', '', '', '', 
+    $usersearchcount    = get_users(false, '', true, null, '', '', '', '', '',
                     '*', $sql, $params);
 
-    if($fmid == 1){
-        $sql = 'id IN (' . $log_message->failuserids . ')';
+    if ($fmid == 1) {
+        $sql = 'id IN (' . $logmessage->failuserids . ')';
     }
 
-    $display_users  = empty($sql) ? array() :
-        get_users_listing($sort, $direction, $page*$perpage, 
+    $displayusers = empty($sql) ? array() :
+        get_users_listing($sort, $direction, $page * $perpage,
         $perpage, '', '', '', $sql, $params);
 
-    $users          = empty($sql) ? array() :
-        get_users_listing($sort, $direction, 0, 
-        0, '', '', '', $sql, $params);
+    $users = empty($sql) ? array() : get_users_listing($sort, $direction, 0, 0, '', '', '', $sql, $params);
 
-    $editor_options = array(
+    $editoroptions = array(
             'trusttext' => true,
             'subdirs' => 1,
             'maxfiles' => EDITOR_UNLIMITED_FILES,
@@ -125,17 +123,17 @@ if(has_capability('block/quickmail:myaddinstance', $context) || is_siteadmin($US
         );
 
     $form = new admin_email_form(null, array(
-        'editor_options' => $editor_options
+        'editor_options' => $editoroptions
     ));
 
-    // Process data submission
+    // Process data submission.
     if ($form->is_cancelled()) {
         unset($SESSION->user_filtering);
         redirect(new moodle_url('/blocks/quickmail/admin_email.php'));
     } else if ($data = $form->get_data()) {
         $message = new Message($data, array_keys($users));
 
-        // @todo refactor so that we're not building two similar structures, namely: $data and $message.
+        // @TODO refactor so that we're not building two similar structures, namely: $data and $message.
         $data->courseid   = SITEID;
         $data->userid     = $USER->id;
         $data->mailto     = isset($SESSION->user_filtering) ? serialize($SESSION->user_filtering) : "unknown filter";
@@ -144,58 +142,56 @@ if(has_capability('block/quickmail:myaddinstance', $context) || is_siteadmin($US
         $data->attachment = '';
         $data->time = time();
 
-        // save record of the message, regardless of errors.
+        // Save record of the message, regardless of errors.
         $data->id = $DB->insert_record('block_quickmail_log', $data);
-        // Send the messages and save the failed users if there are any
-        $data->failuserids = implode(',',$message->send());
+        // Send the messages and save the failed users if there are any.
+        $data->failuserids = implode(',', $message->send());
         $message->sendAdminReceipt();
 
-        // Finished processing
-        // Empty errors mean that you can go back home
-        if(empty($message->warnings)) {
+        // Finished processing. Empty errors mean that you can go back home.
+        if (empty($message->warnings)) {
             unset($SESSION->user_filtering);
-            if(is_siteadmin($USER->id)) {
+            if (is_siteadmin($USER->id)) {
                 redirect(new moodle_url('/blocks/quickmail/emaillog.php', array('courseid' => $COURSE->id)));
             } else {
-                redirect(new moodle_url('/my', NULL));
+                redirect(new moodle_url('/my', null));
             }
-        } 
-        else{
-            // update DB to reflect fail status.
+        } else {
+            // Update DB to reflect fail status.
             $data->status = quickmail::_s('failed_to_send_to') + count($message->warnings) + quickmail::_s('users');
             $DB->update_record('block_quickmail_log', $data);
         }
     }
 
-    // get data for form
-    if(!empty($type)) {
-        $data = $log_message;
-        $log_message->messageformat = $USER->mailformat;
-        $log_message = file_prepare_standard_editor(
-            $log_message, 'message', $editor_options, $context, 'block_quickmail', $type, $log_message->id
+    // Get data for form.
+    if (!empty($type)) {
+        $data = $logmessage;
+        $logmessage->messageformat = $USER->mailformat;
+        $logmessage = file_prepare_standard_editor(
+            $logmessage, 'message', $editoroptions, $context, 'block_quickmail', $type, $logmessage->id
         );
-    }else{
-        $log_message = new stdClass();
+    } else {
+        $logmessage = new stdClass();
     }
 
-    // begin output.
+    // Begin output.
     echo $OUTPUT->header();
     echo $OUTPUT->heading($header);
 
     // Notify the admin.
-    if(!empty($message->warnings)) {
-        foreach($message->warnings as $warning) {
+    if (!empty($message->warnings)) {
+        foreach ($message->warnings as $warning) {
             echo $OUTPUT->notification($warning);
         }
     }
 
-    // Start work   
-    if($fmid != 1){
+    // Start work.
+    if ($fmid != 1) {
         $ufiltering->display_add();
         $ufiltering->display_active();
     }
 
-    $paging_bar = !$sql ? '' :
+    $pagingbar = !$sql ? '' :
         $OUTPUT->paging_bar($usersearchcount, $page, $perpage,
             new moodle_url('/blocks/quickmail/admin_email.php', array(
                 'sort' => $sort,
@@ -204,39 +200,38 @@ if(has_capability('block/quickmail:myaddinstance', $context) || is_siteadmin($US
             )
         ));
 
-    if(!empty($sql)) {
+    if (!empty($sql)) {
         echo $OUTPUT->heading("Found $usersearchcount User(s)");
     }
 
-    echo $paging_bar;
+    echo $pagingbar;
 
-    if(!empty($display_users)) {
+    if (!empty($displayusers)) {
         $columns = array('firstname', 'lastname', 'email', 'city', 'lastaccess');
-        foreach($columns as $column) {
+        foreach ($columns as $column) {
             $direction = ($sort == $column and $direction == "ASC") ? "DESC" : "ASC";
             $$column = html_writer::link('admin_email.php?sort='.$column.'&dir='.
                 $direction, get_string($column));
         }
         $table = new html_table();
 
-        $table->head = array("$firstname / $lastname", $email, $city, $lastaccess); 
+        $table->head = array("$firstname / $lastname", $email, $city, $lastaccess);
         $table->data = array_map(function($user) {
             $fullname = fullname($user);
             $email    = $user->email;
             $city     = $user->city;
-            $lastaccess_time = isset($user->lastaccess) ? 
-                format_time(time() - $user->lastaccess) : get_string('never');
-            return array($fullname, $email, $city, $lastaccess_time);
-        }, $display_users);
+            $lastaccesstime = isset($user->lastaccess) ? format_time(time() - $user->lastaccess) : get_string('never');
+            return array($fullname, $email, $city, $lastaccesstime);
+        }, $displayusers);
         echo html_writer::table($table);
     }
 
-    // need no-reply in both cases.
-    $log_message->noreply = $CFG->noreplyaddress;
+    // Need no-reply in both cases.
+    $logmessage->noreply = $CFG->noreplyaddress;
 
-    // display form and done.
-    $form->set_data($log_message);
+    // Display form and done.
+    $form->set_data($logmessage);
     echo $form->display();
-    echo $paging_bar;
+    echo $pagingbar;
     echo $OUTPUT->footer();
 }
